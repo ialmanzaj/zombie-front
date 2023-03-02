@@ -18,6 +18,7 @@ interface Zombie {
   shirtChoice: number;
   clothesColorChoice: number;
   zombieName: string;
+  eyeColorChoice: number;
   zombieDescription: string;
 }
 
@@ -28,6 +29,7 @@ const Home = () => {
     eyeChoice: 0,
     skinColorChoice: 0,
     shirtChoice: 0,
+    eyeColorChoice: 0,
     clothesColorChoice: 0,
     zombieName: "",
     zombieDescription: ""
@@ -37,11 +39,11 @@ const Home = () => {
   const contractABI = abi.abi;
 
   // Recogemos el adn del zombi y actualizamos nuestra imagen
- const generateZombie = (id: String, name: String, dna: String) => {
+ const generateZombie = (id: string, name: string, dna: string) => {
   let dnaStr = String(dna)
   // rellenamos el ADN con ceros si es menor de 16 caracteres
   while (dnaStr.length < 16)
-    dnaStr = "0" + dnaStr
+    dnaStr = "0" + dnaStr;
 
   let zombieDetails = {
     // los primeros 2 dígitos hacen la cabeza. Tenemos 7 posibles cabezas, entonces hacemos % 7
