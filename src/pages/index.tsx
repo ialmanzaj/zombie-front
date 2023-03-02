@@ -12,18 +12,26 @@ import abi from "./utils/ZombieFactory.json"
 declare var window: any
 
 interface Zombie {
-  headChoice: string;
-  eyeChoice: string;
-  skinColorChoice: string;
-  shirtChoice: string;
-  clothesColorChoice: string;
+  headChoice: number;
+  eyeChoice: number;
+  skinColorChoice: number;
+  shirtChoice: number;
+  clothesColorChoice: number;
   zombieName: string;
   zombieDescription: string;
 }
 
 const Home = () => {
   const [currentAccount, setCurrentAccount] = useState("");
-  const [currentZombie, setZombie] = useState<Zombie | undefined>(undefined);
+  const [currentZombie, setZombie] = useState<Zombie>({
+    headChoice: 0,
+    eyeChoice: 0,
+    skinColorChoice: 0,
+    shirtChoice: 0,
+    clothesColorChoice: 0,
+    zombieName: "",
+    zombieDescription: ""
+  });
 
   const contractAddress = "0xb19ad02b7548EE3d5726F0eBeD6855772F03874D";
   const contractABI = abi.abi;
