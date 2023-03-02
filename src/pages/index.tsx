@@ -2,10 +2,128 @@ import Head from 'next/head'
 import Image from 'next/image'
 import { Inter } from 'next/font/google'
 import styles from '@/styles/Home.module.css'
+import React, { useEffect, useState } from "react";
+import { ethers } from "ethers";
 
 const inter = Inter({ subsets: ['latin'] })
 
-export default function Home() {
+import abi from "./utils/ZombieFactory.json"
+
+declare var window: any
+
+const Home = () => {
+  const [currentAccount, setCurrentAccount] = useState("");
+  const [currentZombie, setZombie] = useState({});
+
+  const contractAddress = "0xb19ad02b7548EE3d5726F0eBeD6855772F03874D";
+  const contractABI = abi.abi;
+
+  // Recogemos el adn del zombi y actualizamos nuestra imagen
+ const generateZombie = (id: String, name: String, dna: String) => {
+  let dnaStr = String(dna)
+  // rellenamos el ADN con ceros si es menor de 16 caracteres
+  while (dnaStr.length < 16)
+    dnaStr = "0" + dnaStr
+
+  let zombieDetails = {
+    // los primeros 2 dígitos hacen la cabeza. Tenemos 7 posibles cabezas, entonces hacemos % 7
+    // para obtener un número entre 0 - 6, después le sumamos 1 para hacerlo entre 1 - 7. Tenemos 7
+    // imagenes llamadas desde "head1.png" hasta "head7.png" que cargamos en base a 
+    // este número:
+    headChoice: parseInt(dnaStr.substring(0, 2)) % 7 + 1,
+    // Los siguientes 2 dígitos se refieren a los ojos, 11 variaciones:
+    eyeChoice: parseInt(dnaStr.substring(2, 4)) % 11 + 1,
+    // 6 variaciones de camisetas:
+    shirtChoice: parseInt(dnaStr.substring(4, 6)) % 6 + 1,
+    // los últimos 6 digitos controlas el color. Actualiza el filtro CSS: hue-rotate
+    // que tiene 360 grados:
+    skinColorChoice: parseInt(dnaStr.substring(6, 8)) / 100 * 360,
+    eyeColorChoice: parseInt(dnaStr.substring(8, 10)) / 100 * 360,
+    clothesColorChoice: parseInt(dnaStr.substring(10, 12)) / 100 * 360,
+    zombieName: name,
+    zombieDescription: "A Level 1 CryptoZombie",
+  }
+  return zombieDetails
+}
+
+  const checkIfWalletIsConnected = async () => {
+    try {
+      const { ethereum } = window;
+
+      if (!ethereum) {
+        console.log("Make sure you have metamask!");
+        return;
+      } else {
+        console.log("We have the ethereum object", ethereum);
+      }
+
+      const accounts = await ethereum.request({ method: 'eth_accounts' });
+
+      if (accounts.length !== 0) {
+        const account = accounts[0];
+        console.log("Found an authorized account:", account);
+        setCurrentAccount(account);
+      } else {
+        console.log("No authorized account found")
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+    /**
+* Implement your connectWallet method here
+*/
+const connectWallet = async () => {
+  try {
+    const { ethereum } = window;
+
+    if (!ethereum) {
+      alert("Get MetaMask!");
+      return;
+    }
+
+    const accounts = await ethereum.request({ method: "eth_requestAccounts" });
+
+    console.log("Connected", accounts[0]);
+    setCurrentAccount(accounts[0]);
+  } catch (error) {
+    console.log(error)
+  }
+}
+
+useEffect(() => {
+  checkIfWalletIsConnected();
+}, []);
+
+const zombieFactory = async () => {
+  try {
+    const { ethereum } = window;
+
+    if (ethereum) {
+      const provider = new ethers.providers.Web3Provider(ethereum);
+      const signer = provider.getSigner();
+
+      const zombieFactoryContract = new ethers.Contract(contractAddress, contractABI, signer);
+      zombieFactoryContract.createRandomZombie("Isaac ");
+
+      // Escucha al evento de `NewZombie`, y actualiza la interfaz
+      zombieFactoryContract.on("NewZombie", (from, to, value, event)=>{
+        const { name, dna, zombieId } = event.args;
+        const zombie = generateZombie(zombieId, name, dna);
+        console.log(zombie);
+        setZombie(zombie);
+    });
+      
+  
+    } else {
+      console.log("Ethereum object doesn't exist!");
+    }
+  } catch (error) {
+    console.log(error)
+  }
+}
+
   return (
     <>
       <Head>
@@ -15,109 +133,34 @@ export default function Home() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <main className={styles.main}>
-        <div className={styles.description}>
-          <p>
-            Get started by editing&nbsp;
-            <code className={styles.code}>src/pages/index.tsx</code>
-          </p>
-          <div>
-            <a
-              href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              By{' '}
-              <Image
-                src="/vercel.svg"
-                alt="Vercel Logo"
-                className={styles.vercelLogo}
-                width={100}
-                height={24}
-                priority
-              />
-            </a>
-          </div>
-        </div>
+        <h1 className={inter.className}>
+          👋 Hola amigo!
+        </h1>
+        <button onClick={zombieFactory} className={styles.card}>
+         <span>
+         🧟‍♀️Create a new zombie  <span>→</span>
+         </span>
+        </button>
+      <p> Zombie name: {currentZombie.zombieName}</p>
+      <p> Zombie descriptio: {currentZombie.zombieDescription}</p>
+      <p> Gen de la Cabeza:{currentZombie.headChoice}</p>
+      <p> Gen de la Ojos:{currentZombie.eyeChoice}</p>
+      <p> Gen de las Camisetas:{currentZombie.shirtChoice}</p>
+      <p> Gen del Color de Piel: {currentZombie.skinColorChoice}</p>
+      <p> Gen del Color de Ojos:{currentZombie.eyeColorChoice}</p>
+      <p> Gen del Color de la Ropa: {currentZombie.clothesColorChoice}</p>
 
-        <div className={styles.center}>
-          <Image
-            className={styles.logo}
-            src="/next.svg"
-            alt="Next.js Logo"
-            width={180}
-            height={37}
-            priority
-          />
-          <div className={styles.thirteen}>
-            <Image
-              src="/thirteen.svg"
-              alt="13"
-              width={40}
-              height={31}
-              priority
-            />
-          </div>
-        </div>
-
-        <div className={styles.grid}>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2 className={inter.className}>
-              Docs <span>-&gt;</span>
-            </h2>
-            <p className={inter.className}>
-              Find in-depth information about Next.js features and&nbsp;API.
-            </p>
-          </a>
-
-          <a
-            href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2 className={inter.className}>
-              Learn <span>-&gt;</span>
-            </h2>
-            <p className={inter.className}>
-              Learn about Next.js in an interactive course with&nbsp;quizzes!
-            </p>
-          </a>
-
-          <a
-            href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2 className={inter.className}>
-              Templates <span>-&gt;</span>
-            </h2>
-            <p className={inter.className}>
-              Discover and deploy boilerplate example Next.js&nbsp;projects.
-            </p>
-          </a>
-
-          <a
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2 className={inter.className}>
-              Deploy <span>-&gt;</span>
-            </h2>
-            <p className={inter.className}>
-              Instantly deploy your Next.js site to a shareable URL
-              with&nbsp;Vercel.
-            </p>
-          </a>
-        </div>
+        {/*
+        * If there is no currentAccount render this button
+        */}
+        {!currentAccount && (
+          <button  onClick={connectWallet}>
+            Connect Wallet
+          </button>
+        )}
       </main>
     </>
   )
 }
+
+export default Home;
